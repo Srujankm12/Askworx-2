@@ -36,9 +36,5 @@
       "icons/icon.ico"
     ]
   },
-  "plugins": {
-    "store": {
-      "path": "config.json"
-    }
-  }
+  "plugins": {}
 }
