@@ -54,12 +54,28 @@ async fn make_client(
 ) -> Result<Client<tokio_util::compat::Compat<TcpStream>>, String> {
     let mut config = Config::new();
 
-    if server.contains('\\') {
-        let parts: Vec<&str> = server.splitn(2, '\\').collect();
+    // Parse formats: HOST\INSTANCE,PORT  |  HOST\INSTANCE  |  HOST,PORT  |  HOST
+    let (host_instance, explicit_port) = match server.rfind(',') {
+        Some(idx) => {
+            let port_str = server[idx + 1..].trim();
+            match port_str.parse::<u16>() {
+                Ok(p) => (&server[..idx], Some(p)),
+                Err(_) => (server, None),
+            }
+        }
+        None => (server, None),
+    };
+
+    if host_instance.contains('\\') {
+        let parts: Vec<&str> = host_instance.splitn(2, '\\').collect();
         config.host(parts[0]);
         config.instance_name(parts[1]);
     } else {
-        config.host(server);
+        config.host(host_instance);
+    }
+
+    if let Some(port) = explicit_port {
+        config.port(port);
     }
 
     // Windows Integrated Security via SSPI (Windows-only at runtime)
