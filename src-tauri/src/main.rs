@@ -164,13 +164,14 @@ async fn get_process_logs(
          ORDER BY created_on DESC"
     );
 
-    let rows = client
-        .query(query.as_str(), &[])
-        .await
-        .map_err(|e| format!("Query failed: {e}"))?
-        .into_first_result()
-        .await
-        .map_err(|e| format!("Fetch failed: {e}"))?;
+    let query_result = client.query(query.as_str(), &[]).await;
+    let rows = match query_result {
+        Ok(r) => match r.into_first_result().await {
+            Ok(rows) => rows,
+            Err(_) => return Ok(vec![]), // table doesn't exist or no data
+        },
+        Err(_) => return Ok(vec![]), // table doesn't exist in this DB
+    };
 
     let logs: Vec<ProcessLog> = rows
         .iter()
